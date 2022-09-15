@@ -1,0 +1,79 @@
+#!/bin/sh -u
+SERVER_NAME="${1-}"
+SERVER_API_PORT="44121"
+WG_IP_ADDRESS="${2-}"
+WG_PUBLIC_KEY="${3-}"
+SERVERS_JSON="${SERVERS_JSON:-"data/servers.json"}"
+USER_AGENT="${USER_AGENT:-"App: 3.0.0 (576942783), macOS: Version 12.4 (Build 21F79)"}"
+#[ -n "$WG_IP_ADDRESS" ] || { echo >&2 "ERROR: must pass WG ip address to logout"; exit 255; }
+#[ -n "$WG_PUBLIC_KEY" ] || { echo >&2 "ERROR: must pass WG public key to logout"; exit 255; }
+[ -n "$SERVER_NAME" ] || { echo >&2 "ERROR: must pass server name to login to"; exit 255; }
+if [ ! -s "$SERVERS_JSON" ]; then
+  echo >&2 "ERROR: cannot find servers json $SERVERS_JSON, run get_servers first!"; exit 100
+fi
+# Lookup our IP
+if jq -e --arg ip_address "$SERVER_NAME" '.servers[] | select(.ip_address == $ip_address)' "$SERVERS_JSON" >/dev/null; then
+  SERVER_NAME="$(jq -r --arg ip_address "$SERVER_NAME" '.servers[] | select(.ip_address == $ip_address) | .name' "$SERVERS_JSON")"
+elif ! jq -e --arg server_name "$SERVER_NAME" '.servers[] | select(.name == $server_name)' "$SERVERS_JSON" >/dev/null; then
+  echo >&2 "ERROR: $SERVER_NAME is not a valid server!"; exit 200
+fi
+WIREGUARD_KEYS_FILE="data/wg_${SERVER_NAME}.conf"
+
+lookup_public_key() {
+  WG_PUBLIC_KEY="$(jq -r --arg wg_ip_address "$1" '[.[] | select(.WGIPAddress == $wg_ip_address)][0] | .WGPublicKey' "$WIREGUARD_KEYS_FILE")"
+  [ "$WG_PUBLIC_KEY" == "null" ] && WG_PUBLIC_KEY=""
+  [ -n "$WG_PUBLIC_KEY" ] || { echo >&2 "ERROR: we need both a public key and ip to logout, we couldn't find the public key from this ip"; exit 201; }
+  echo "$WG_PUBLIC_KEY"
+}
+
+logout() {
+  local SERVER_NAME="$1"
+  local WG_IP_ADDRESS="$2"
+  local WG_PUBLIC_KEY="$3"
+  RESULT="$(curl "https://${SERVER_NAME}:${SERVER_API_PORT}/api/1.0/logout" \
+  --compressed --silent \
+  -X POST \
+  -H "$USER_AGENT" \
+  -H 'Content-Type: application/json' \
+  -H 'Accept-Encoding: gzip, deflate, br' \
+  -d '{
+    "WGIPAddress" : "'$WG_IP_ADDRESS'",
+    "WGPublicKey" : "'$WG_PUBLIC_KEY'"
+  }')" || RETCODE=$? && RETCODE=0
+  if [ "$RETCODE" -eq 0 ]; then
+    if [ "$(echo "$RESULT" | jq -r '.Status')" == "OK" ]; then
+      echo "Successfully logged out of wireguard server $SERVER_NAME with WG ip $WG_IP_ADDRESS"
+      return 0
+    else
+      ERROR_MESSAGE="$(echo "$RESULT" | jq -r '.Errmsg')"
+      ERROR_CODE="$(echo "$RESULT" | jq -r '.ErrorCode')"
+      echo >&2  "ERROR: $ERROR_MESSAGE"
+      return $ERROR_CODE
+    fi
+  else
+    echo >&2 "ERROR: failed to logout due to curl error"; return 101
+  fi
+}
+
+remove_wireguard_key() {
+  local WIREGUARD_KEYS_FILE="$1"
+  local WG_IP_ADDRESS="$2"
+  local WG_PUBLIC_KEY="$3"
+  local NEW_FILE_CONTENT="$(jq --arg wg_ip_address "$WG_IP_ADDRESS" --arg wg_public_key "$WG_PUBLIC_KEY" 'del(.[] | select(.WGIPAddress == $wg_ip_address and .WGPublicKey == $wg_public_key))' "$WIREGUARD_KEYS_FILE")"
+  [ -z "$NEW_FILE_CONTENT" ] && NEW_FILE_CONTENT="[]"
+  echo "$NEW_FILE_CONTENT" > "$WIREGUARD_KEYS_FILE"
+}
+
+if [ -n "$WG_IP_ADDRESS" -a -z "$WG_PUBLIC_KEY" ]; then
+  WG_IP_ADDRESSES="$WG_IP_ADDRESS"
+elif [ -z "$WG_IP_ADDRESS" -a -z "$WG_PUBLIC_KEY" ]; then
+  WG_IP_ADDRESSES="$(jq -r '.[].WGIPAddress' "$WIREGUARD_KEYS_FILE")"
+fi
+IFS=$'\n'; for WG_IP_ADDRESS in $WG_IP_ADDRESSES; do
+  WG_PUBLIC_KEY="$(lookup_public_key "$WG_IP_ADDRESS")" || { echo >&2 "ERROR: could not find public key for $WG_IP_ADDRESS"; continue; }
+  logout "$SERVER_NAME" "$WG_IP_ADDRESS" "$WG_PUBLIC_KEY"; RETCODE=$?
+  if [ "$RETCODE" -eq 0 -o "$RETCODE" -eq 10 ]; then
+    remove_wireguard_key "$WIREGUARD_KEYS_FILE" "$WG_IP_ADDRESS" "$WG_PUBLIC_KEY"
+  fi
+done
+[ ! -s "$WIREGUARD_KEYS_FILE" -o "$(cat "$WIREGUARD_KEYS_FILE")" == "[]" ] && rm -f "$WIREGUARD_KEYS_FILE"
