@@ -1,0 +1,29 @@
+version: "3.8"
+services:
+  wireguard-client-privado:
+    image: lscr.io/linuxserver/wireguard:latest
+    container_name: wireguard-client-privado
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    entrypoint: "/privado-scripts/docker-entrypoint.sh"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Hong_Kong
+      - INTERNAL_SUBNET=10.13.13.0
+      - ALLOWEDIPS=0.0.0.0/0
+      - LOG_CONFS=true
+      - PRIVADO_VPN_SERVERS=$PRIVADO_VPN_SERVERS
+      - PRIVADO_USERNAME=$PRIVADO_USERNAME
+      - PRIVADO_PASSWORD=$PRIVADO_PASSWORD
+    volumes:
+      - ./wireguard/config:/config
+      - ./wireguard/privado-wireguard-vpn:/privado-scripts
+      - /lib/modules:/lib/modules
+    privileged: true
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    restart: unless-stopped
+    networks:
+      - default
