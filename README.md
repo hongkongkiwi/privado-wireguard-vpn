@@ -44,13 +44,13 @@ Show a human readable list of all servers
 Request a wireguard ip from the server
 
 ```
-./login_wireguard_server "<server_url>"
+./login_wireguard_server "server_name, city or country"
 ```
 
-Generate a wireguard compatible conf file to wg0.conf
+Generate a wireguard compatible conf file to wg0.conf (note server name and wg_interface_ip from above)
 
 ```
-./gen_wireguard_conf "<server_url>" "<wg_interface_ip>" "wg0.conf"
+./gen_wireguard_conf "server_name" "<wg_interface_ip>" "wg0.conf"
 ```
 
 When your finished with the ip, release it (be nice), although it seems that this is not necessary as IPs will time out if not used
@@ -81,4 +81,13 @@ If you want a simple script to pull a config and do all the steps you can run th
 
 ```
 ./wireguard_conf_start_to_finish "ams-101.vpn.privado.io" "wg0.conf"
+```
+
+## Using these scripts in another docker
+
+If you want to use a linuxserver docker, you can override the entrypoint so you don't have to make your own custom docker. Obviously you'll need to add more environment variables for this to work properly but it's just an example
+
+```
+git clone https://github.com/hongkongkiwi/privado-wireguard-vpn.git
+docker run --rm -v $PWD/privado-vpn-wireguard:/opt/privado-vpn-wireguard -e PRIVADO_VPN_SERVERS="US" --entrypoint "/opt/privado-vpn-wireguard/docker-entrypoint.sh" --env-file $PWD/privado-vpn-wireguard/creds.env lscr.io/linuxserver/wireguard
 ```

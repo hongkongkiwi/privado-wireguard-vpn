@@ -1,7 +1,8 @@
 #!/bin/bash -ue
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CREDS_FILE="${CREDS_FILE:-"creds.env"}"
 [ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
-PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"
+PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"$SCRIPT_DIR/data"}"
 
 command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 254; }
 

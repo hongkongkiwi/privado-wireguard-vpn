@@ -1,11 +1,12 @@
 #!/bin/bash -ue
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CREDS_FILE="${CREDS_FILE:-"creds.env"}"
 [ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
 [ -n "$PRIVADO_USERNAME" ] || { echo >&2 "ERROR: PRIVADO_USERNAME not set or missing creds file; exit 255; }
 [ -n "$PRIVADO_PASSWORD" ] || { echo >&2 "ERROR: PRIVADO_PASSWORD not set or missing creds file; exit 255; }
 CLIENT_API_URL="${CLIENT_API_URL:-"https://client-api.privado.io/v1"}"
 USER_AGENT="${USER_AGENT:-"App: 3.0.0 (576942783), macOS: Version 12.4 (Build 21F79)"}"
-PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"
+PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"$SCRIPT_DIR/data"}"
 LOGIN_TOKEN_FILE="${LOGIN_TOKEN:-"$PRIVADO_DATA_DIR/token.json"}"
 SERVERS_JSON="${SERVERS_JSON:-"$PRIVADO_DATA_DIR/servers.json"}"
 
@@ -14,12 +15,12 @@ command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed
 
 SERVER_NAME="${1-}"
 SERVER_API_PORT="44121"
-[ -n "$SERVER_NAME" ] || { echo >&2 "ERROR: must pass server name to login to"; exit 255; }
+[ -n "$SERVER_NAME" ] || { echo >&2 "ERROR: must pass server name,city or country to login to"; exit 255; }
 if [ ! -s "$SERVERS_JSON" ]; then
   echo >&2 "ERROR: cannot find servers json $SERVERS_JSON, run get_servers first!"; exit 100
-elif ! grep -q "\"name\": \"$SERVER_NAME\"" "$SERVERS_JSON"; then
-  echo >&2 "ERROR: server '$SERVER_NAME' not found in $SERVERS_JSON list!"
 fi
+
+SERVER_NAME="$("$SCRIPT_DIR/resolve_server_name" "$SERVER_NAME")" || { echo >&2 "ERROR: cannot resolve server name"; exit 253; }
 
 RESULT="$(curl "https://${SERVER_NAME}:${SERVER_API_PORT}/api/1.0/login" \
 --compressed --silent \
@@ -44,4 +45,4 @@ fi
 RESULT="$(echo "$RESULT" | jq 'del(.Status)')"
 NEW_SERVER_CONTENT="$(jq -e --argjson result "$RESULT" '. += [$result]' "$WIREGUARD_KEYS_FILE")"
 echo "$NEW_SERVER_CONTENT" > "$WIREGUARD_KEYS_FILE"
-echo "Successfully got wireguard interface ip $WG_IP_ADDRESS for $SERVER_NAME"
+echo "Successfully got wireguard interface ip '$WG_IP_ADDRESS' for '$SERVER_NAME'"

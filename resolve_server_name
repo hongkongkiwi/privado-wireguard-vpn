@@ -1,0 +1,29 @@
+#!/bin/bash -u
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+LOOKUP="${1-}"
+[ -n "$LOOKUP" ] || { echo >&2 "ERROR: must pass a server name, city or country to lookup"; exit 255; }
+PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"$SCRIPT_DIR/data"}"
+SERVERS_JSON="${SERVERS_JSON:-"$PRIVADO_DATA_DIR/servers.json"}"
+[ -f "$SERVERS_JSON" ] || { echo >&2 "ERROR: cannot find servers json $SERVERS_JSON, please run get_servers first"; exit 100; }
+SERVER_NAME=""
+
+command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 254; }
+
+if jq -e -r --arg lookup "$LOOKUP" '.servers[] | select(.name == $lookup and .maintenance == false)' "$SERVERS_JSON" >/dev/null; then
+  SERVER_NAME="$LOOKUP"
+else
+  COUNTRY_COUNT="$(jq -e -r --arg lookup "$LOOKUP" '[.servers[] | select(.country == $lookup and .maintenance == false)] | length' "$SERVERS_JSON")" || COUNTRY_COUNT=0
+  [ -z "$COUNTRY_COUNT" -o "$COUNTRY_COUNT" == "null" ] && COUNTRY_COUNT=0
+  CITY_COUNT="$(jq -e -r --arg lookup "$LOOKUP" '[.servers[] | select(.city == $lookup and .maintenance == false)] | length' "$SERVERS_JSON")" || CITY_COUNT=0
+  [ -z "$CITY_COUNT" -o "$CITY_COUNT" == "null" ] && CITY_COUNT=0
+
+  if [ "$COUNTRY_COUNT" -gt 0 ]; then
+    COUNT="$(jq -r --arg lookup "$LOOKUP" '[.servers[] | select(.country == $lookup and .maintenance == false)] | length' "$SERVERS_JSON")"
+    SERVER_NAME="$(jq -r --argjson index "$(( $RANDOM % $COUNT ))" --arg lookup "$LOOKUP" '[.servers[] | select(.country == $lookup and .maintenance == false)][$index].name' "$SERVERS_JSON")"
+  elif [ "$CITY_COUNT" -gt 0 ]; then
+    COUNT="$(jq -r --arg lookup "$LOOKUP" '[.servers[] | select(.city == $lookup and .maintenance == false)] | length' "$SERVERS_JSON")"
+    SERVER_NAME="$(jq -r --argjson index "$(( $RANDOM % $COUNT ))" --arg lookup "$LOOKUP" '[.servers[] | select(.city == $lookup and .maintenance == false)][$index].name' "$SERVERS_JSON")"
+  fi
+fi
+[ -n "$SERVER_NAME" ] || { echo >&2 "ERROR: invalid server $SERVER_NAME (or the server has maintenance on it)"; exit 101; }
+echo $SERVER_NAME

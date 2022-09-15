@@ -1,7 +1,7 @@
 #!/bin/bash -ue
 CREDS_FILE="${CREDS_FILE:-"creds.env"}"
 [ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
-PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"
+PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"$SCRIPT_DIR/data"}"
 SERVERS_JSON="${SERVERS_JSON:-"$PRIVADO_DATA_DIR/servers.json"}"
 [ -f "$SERVERS_JSON" ] || { echo >&2 "ERROR: cannot find servers file, run get_servers first"; exit 100; }
 
