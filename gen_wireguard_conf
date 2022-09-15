@@ -18,7 +18,7 @@ generate_config() {
 
   export WIREGUARD_DNS_SERVERS="${WIREGUARD_DNS_SERVERS:-"198.18.0.1 198.18.0.2"}"
   export WIREGUARD_PEER_KEEP_ALIVE="${WIREGUARD_PEER_KEEP_ALIVE:-"25"}"
-  export WIREGUARD_PEER_ALLOWED_IPS="${WIREGUARD_LISTENPORT:-"0.0.0.0/0"}"
+  export WIREGUARD_PEER_ALLOWED_IPS="${WIREGUARD_PEER_ALLOWED_IPS:-"0.0.0.0/0"}"
   export WIREGUARD_LISTENPORT="${WIREGUARD_LISTENPORT:-"51820"}"
   WIREGUARD_JSON="$(jq -e --arg wg_ip_address "$WG_INTERFACE_IP" '.[] | select(.WGIPAddress == $wg_ip_address)' "$JSON_FILE")" || { echo >&2 "ERROR: cannot find wg_ip_address $WG_INTERFACE_IP in $JSON_FILE"; return 100; }
   [ -f "$WIREGUARD_TEMPLATE_FILE" ] || { echo >&2 "ERROR: cannot find template file $WIREGUARD_TEMPLATE_FILE"; exit 200; }
