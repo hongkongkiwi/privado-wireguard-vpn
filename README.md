@@ -47,11 +47,13 @@ Request a wireguard ip from the server
 ./login_wireguard_server "<server_url>"
 ```
 
+Generate a wireguard compatible conf file to wg0.conf
+
 ```
 ./gen_wireguard_conf "<server_url>" "<wg_interface_ip>" "wg0.conf"
 ```
 
-When your finished with the ip, release it
+When your finished with the ip, release it (be nice), although it seems that this is not necessary as IPs will time out if not used
 
 ```
 ./logout_wireguard_server "<server_url>" "<wg_interface_ip>"
