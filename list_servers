@@ -1,5 +1,8 @@
-#!/bin/sh -ue
-SERVERS_JSON="${SERVERS_JSON:-"data/servers.json"}"
+#!/bin/bash -ue
+CREDS_FILE="${CREDS_FILE:-"creds.env"}"
+[ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
+PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"
+SERVERS_JSON="${SERVERS_JSON:-"$PRIVADO_DATA_DIR/servers.json"}"
 [ -f "$SERVERS_JSON" ] || { echo >&2 "ERROR: cannot find servers file, run get_servers first"; exit 100; }
 
 command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 254; }

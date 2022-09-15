@@ -1,4 +1,6 @@
-#!/bin/sh -u
+#!/bin/bash -u
+CREDS_FILE="${CREDS_FILE:-"creds.env"}"
+[ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
 SERVER_NAME="${1-}"
 SERVER_API_PORT="44121"
 WG_IP_ADDRESS="${2-}"

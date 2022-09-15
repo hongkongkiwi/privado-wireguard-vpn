@@ -1,4 +1,6 @@
 #!/bin/bash -ue 
+CREDS_FILE="${CREDS_FILE:-"creds.env"}"
+[ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
 CLIENT_API_URL="${CLIENT_API_URL:-"https://client-api.privado.io/v1"}"
 USER_AGENT="${USER_AGENT:-"App: 3.0.0 (576942783), macOS: Version 12.4 (Build 21F79)"}"
 PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"

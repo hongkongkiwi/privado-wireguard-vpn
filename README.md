@@ -76,3 +76,9 @@ Not very useful ... but if you want to get your account data
 ```
 ./get_account_details
 ```
+
+If you want a simple script to pull a config and do all the steps you can run this
+
+```
+./wireguard_conf_start_to_finish "ams-101.vpn.privado.io" "wg0.conf"
+```

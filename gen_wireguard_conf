@@ -1,15 +1,17 @@
-#!/bin/sh -ue
-DATA_DIR="data"
+#!/bin/bash -ue
+CREDS_FILE="${CREDS_FILE:-"creds.env"}"
+[ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
+PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"
 
 command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 254; }
 
 generate_config() {
   SERVER_NAME="${1-}"
-  JSON_FILE="$DATA_DIR/wg_$SERVER_NAME.json"
+  JSON_FILE="$PRIVADO_DATA_DIR/wg_$SERVER_NAME.json"
   [ -f "$JSON_FILE" ] || { echo >&2 "ERROR: missing json file"; return 255; }
   WG_INTERFACE_IP="${2-}"
   [ -n "$WG_INTERFACE_IP" ] || { echo >&2 "ERROR: missing wg interface ip"; return 255; }
-  OUTPUT_FILE="${3:-"$DATA_DIR/wg_${SERVER_NAME}_${WG_INTERFACE_IP}.conf"}"
+  OUTPUT_FILE="${3:-"$PRIVADO_DATA_DIR/wg_${SERVER_NAME}_${WG_INTERFACE_IP}.conf"}"
   CLIENT_LISTENPORT="${4-}"
 
   DNS_SERVER1="198.18.0.1"
@@ -38,3 +40,4 @@ EOF
 }
 
 generate_config $@
+echo "Successfully generated wireguard config $OUTPUT_FILE"

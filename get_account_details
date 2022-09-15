@@ -2,7 +2,6 @@
 CREDS_FILE="${CREDS_FILE:-"creds.env"}"
 [ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
 [ -n "$PRIVADO_USERNAME" ] || { echo >&2 "ERROR: PRIVADO_USERNAME not set or missing creds file; exit 255; }
-[ -n "$PRIVADO_PASSWORD" ] || { echo >&2 "ERROR: PRIVADO_PASSWORD not set or missing creds file; exit 255; }
 API_KEY="${API_KEY:-"9f994c466340e8f2ed60a99396fecb6a"}"
 CLIENT_API_URL="${CLIENT_API_URL:-"https://client-api.privado.io/v1"}"
 PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"

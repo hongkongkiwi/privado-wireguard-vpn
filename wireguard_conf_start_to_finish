@@ -1,0 +1,15 @@
+#!/bin/bash -u
+CREDS_FILE="${CREDS_FILE:-"creds.env"}"
+[ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
+PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"
+SERVER_NAME="${1-}"
+[ -n "$SERVER_NAME" ] || { echo >&2 "ERROR: must pass server name"; exit 255; }
+OUTPUT_FILE="${2-}"
+[ -n "$OUTPUT_FILE" ] || { echo >&2 "ERROR: must pass output file"; exit 255; }
+
+./login || { echo >&2 "ERROR: failed to login"; exit 99; }
+./get_servers || { echo >&2 "ERROR: failed to get servers"; exit 100; }
+./login_wireguard_server "$SERVER_NAME" || { echo >&2 "ERROR: failed to get wireguard ip"; exit 101; }
+WG_INTERFACE_IP="$(jq -r -e '.[-1].WGIPAddress' "$PRIVADO_DATA_DIR/wg_$SERVER_NAME.json")"
+./gen_wireguard_conf "$SERVER_NAME" "$WG_INTERFACE_IP" "$OUTPUT_FILE" || { echo >&2 "ERROR: failed to generate conf"; exit 102; }
+exit 0
