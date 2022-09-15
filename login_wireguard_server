@@ -32,7 +32,7 @@ RESULT="$(curl "https://${SERVER_NAME}:${SERVER_API_PORT}/api/1.0/login" \
   "Password" : "'$PRIVADO_PASSWORD'"
 }')"
 
-WIREGUARD_KEYS_FILE="PRIVADO_DATA_DIR/wg_${SERVER_NAME}.json"
+WIREGUARD_KEYS_FILE="$PRIVADO_DATA_DIR/wg_${SERVER_NAME}.json"
 mkdir -p "$(dirname "$WIREGUARD_KEYS_FILE")"
 
 WG_IP_ADDRESS="$(echo "$RESULT" | jq -r '.WGIPAddress')"
@@ -44,4 +44,4 @@ fi
 RESULT="$(echo "$RESULT" | jq 'del(.Status)')"
 NEW_SERVER_CONTENT="$(jq -e --argjson result "$RESULT" '. += [$result]' "$WIREGUARD_KEYS_FILE")"
 echo "$NEW_SERVER_CONTENT" > "$WIREGUARD_KEYS_FILE"
-echo "Successfully got wireguard interface ip $WG_IP_ADDRESS"
+echo "Successfully got wireguard interface ip $WG_IP_ADDRESS for $SERVER_NAME"

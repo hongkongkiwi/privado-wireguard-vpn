@@ -1,0 +1,6 @@
+#!/bin/bash -ue
+CREDS_FILE="${CREDS_FILE:-"creds.env"}"
+[ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
+PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"
+rm -f "$PRIVADO_DATA_DIR/"*.json
+rm -f "$PRIVADO_DATA_DIR/"*.conf

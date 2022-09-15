@@ -65,6 +65,12 @@ OR if you prefer, release all ips for a server
 ./logout_wireguard_server "<server_url>"
 ```
 
+When your finished and want to clear all session data (I could not find a logout endpoint)
+
+```
+./clear_session_data
+```
+
 Not very useful ... but if you want to get your account data
 
 ```
