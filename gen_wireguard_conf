@@ -3,6 +3,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CREDS_FILE="${CREDS_FILE:-"creds.env"}"
 [ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
 PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"$SCRIPT_DIR/data"}"
+WIREGUARD_TEMPLATE_FILE="${WIREGUARD_TEMPLATE_FILE:-"$SCRIPT_DIR/wireguard.tmpl"}"
 
 command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 254; }
 
@@ -15,30 +16,18 @@ generate_config() {
   OUTPUT_FILE="${3:-"$PRIVADO_DATA_DIR/wg_${SERVER_NAME}_${WG_INTERFACE_IP}.conf"}"
   CLIENT_LISTENPORT="${4-}"
 
-  DNS_SERVER1="198.18.0.1"
-  DNS_SERVER2="198.18.0.2"
-  KEEP_ALIVE="25"
-  ALLOWED_IPS="0.0.0.0/0"
-  CLIENT_LISTENPORT="${CLIENT_LISTENPORT:-"51820"}"
+  export WIREGUARD_DNS_SERVERS="${WIREGUARD_DNS_SERVERS:-"198.18.0.1 198.18.0.2"}"
+  export WIREGUARD_PEER_KEEP_ALIVE="${WIREGUARD_PEER_KEEP_ALIVE:-"25"}"
+  export WIREGUARD_PEER_ALLOWED_IPS="${WIREGUARD_LISTENPORT:-"0.0.0.0/0"}"
+  export WIREGUARD_LISTENPORT="${WIREGUARD_LISTENPORT:-"51820"}"
   WIREGUARD_JSON="$(jq -e --arg wg_ip_address "$WG_INTERFACE_IP" '.[] | select(.WGIPAddress == $wg_ip_address)' "$JSON_FILE")" || { echo >&2 "ERROR: cannot find wg_ip_address $WG_INTERFACE_IP in $JSON_FILE"; return 100; }
+  [ -f "$WIREGUARD_TEMPLATE_FILE" ] || { echo >&2 "ERROR: cannot find template file $WIREGUARD_TEMPLATE_FILE"; exit 200; }
 
-  eval $(jq -r '.[0] | to_entries|map("\(.key)=\(.value|tostring)")|.[]' "$JSON_FILE")
+  eval export $(jq -r '.[0] | to_entries|map("\(.key)=\(.value|tostring)")|.[]' "$JSON_FILE")
   mkdir -p "$(dirname "$OUTPUT_FILE")"
-cat >"$OUTPUT_FILE" <<EOF
-[Interface]
-PrivateKey = $WGPrivateKey
-#ListenPort = $CLIENT_LISTENPORT
-Address = $WGIPAddress/32
-DNS = $DNS_SERVER1 $DNS_SERVER2
-
-[Peer]
-PublicKey = $ServerPublicKey
-AllowedIPs = $ALLOWED_IPS
-Endpoint = $ServerIPAddress:$ServerListeningPort
-StaleSessionTimeout = $StaleSessionTimeout
-PersistentKeepalive = $KEEP_ALIVE
-EOF
+  envsubst < "$WIREGUARD_TEMPLATE_FILE" | sed -e 's/§/$/g' >"$OUTPUT_FILE"
 }
 
-generate_config $@
-echo "Successfully generated wireguard config $OUTPUT_FILE"
+generate_config $@ \
+  && echo "Successfully generated wireguard config $OUTPUT_FILE" \
+  || echo >&2 "ERROR: failed to generate wireguard config $OUTPUT_FILE"
