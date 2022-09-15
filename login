@@ -7,6 +7,10 @@ API_KEY="${API_KEY:-"9f994c466340e8f2ed60a99396fecb6a"}"
 CLIENT_API_URL="${CLIENT_API_URL:-"https://client-api.privado.io/v1"}"
 LOGIN_TOKEN_FILE="${LOGIN_TOKEN:-"data/token.json"}"
 USER_AGENT="${USER_AGENT:-"App: 3.0.0 (576942783), macOS: Version 12.4 (Build 21F79)"}"
+
+command -v curl >/dev/null 2>&1 || { echo >&2 "I require curl but it's not installed.  Aborting."; exit 254; }
+command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 254; }
+
 mkdir -p "$(dirname "$LOGIN_TOKEN_FILE")"
 
 curl "$CLIENT_API_URL/login" \

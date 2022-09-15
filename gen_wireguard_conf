@@ -1,6 +1,8 @@
 #!/bin/sh -ue
 DATA_DIR="data"
 
+command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 254; }
+
 generate_config() {
   SERVER_NAME="${1-}"
   JSON_FILE="$DATA_DIR/wg_$SERVER_NAME.json"

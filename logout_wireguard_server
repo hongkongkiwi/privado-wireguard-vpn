@@ -12,6 +12,10 @@ USER_AGENT="${USER_AGENT:-"App: 3.0.0 (576942783), macOS: Version 12.4 (Build 21
 if [ ! -s "$SERVERS_JSON" ]; then
   echo >&2 "ERROR: cannot find servers json $SERVERS_JSON, run get_servers first!"; exit 100
 fi
+
+command -v curl >/dev/null 2>&1 || { echo >&2 "I require curl but it's not installed.  Aborting."; exit 254; }
+command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 254; }
+
 # Lookup our IP
 if jq -e --arg ip_address "$SERVER_NAME" '.servers[] | select(.ip_address == $ip_address)' "$SERVERS_JSON" >/dev/null; then
   SERVER_NAME="$(jq -r --arg ip_address "$SERVER_NAME" '.servers[] | select(.ip_address == $ip_address) | .name' "$SERVERS_JSON")"

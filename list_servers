@@ -1,4 +1,7 @@
 #!/bin/sh -ue
 SERVERS_JSON="${SERVERS_JSON:-"data/servers.json"}"
 [ -f "$SERVERS_JSON" ] || { echo >&2 "ERROR: cannot find servers file, run get_servers first"; exit 100; }
-cat "$SERVERS_JSON" | jq -r '.servers[] | select(.maintenance == false) | .country+" ("+.city+"): "+.name'
+
+command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 254; }
+
+jq -r '.servers[] | select(.maintenance == false) | .country+" ("+.city+"): "+.name' "$SERVERS_JSON"

@@ -9,6 +9,9 @@ PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"
 LOGIN_TOKEN_FILE="${LOGIN_TOKEN:-"$PRIVADO_DATA_DIR/token.json"}"
 USER_AGENT="${USER_AGENT:-"App: 3.0.0 (576942783), macOS: Version 12.4 (Build 21F79)"}"
 
+command -v curl >/dev/null 2>&1 || { echo >&2 "I require curl but it's not installed.  Aborting."; exit 254; }
+command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed.  Aborting."; exit 254; }
+
 [ -f "$LOGIN_TOKEN_FILE" ] || { echo >&2 "ERROR: not logged in"; exit 100; }
 AUTH_TOKEN="$(cat "$LOGIN_TOKEN_FILE" | jq -r '.access_token')"
 [ -n "$AUTH_TOKEN" ] || { echo >&2 "ERROR: no auth access_token found, login again"; exit 101; }
