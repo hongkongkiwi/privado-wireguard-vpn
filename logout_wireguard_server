@@ -3,7 +3,8 @@ SERVER_NAME="${1-}"
 SERVER_API_PORT="44121"
 WG_IP_ADDRESS="${2-}"
 WG_PUBLIC_KEY="${3-}"
-SERVERS_JSON="${SERVERS_JSON:-"data/servers.json"}"
+PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"
+SERVERS_JSON="${SERVERS_JSON:-"$PRIVADO_DATA_DIR/servers.json"}"
 USER_AGENT="${USER_AGENT:-"App: 3.0.0 (576942783), macOS: Version 12.4 (Build 21F79)"}"
 #[ -n "$WG_IP_ADDRESS" ] || { echo >&2 "ERROR: must pass WG ip address to logout"; exit 255; }
 #[ -n "$WG_PUBLIC_KEY" ] || { echo >&2 "ERROR: must pass WG public key to logout"; exit 255; }
@@ -17,7 +18,7 @@ if jq -e --arg ip_address "$SERVER_NAME" '.servers[] | select(.ip_address == $ip
 elif ! jq -e --arg server_name "$SERVER_NAME" '.servers[] | select(.name == $server_name)' "$SERVERS_JSON" >/dev/null; then
   echo >&2 "ERROR: $SERVER_NAME is not a valid server!"; exit 200
 fi
-WIREGUARD_KEYS_FILE="data/wg_${SERVER_NAME}.conf"
+WIREGUARD_KEYS_FILE="$PRIVADO_DATA_DIR/wg_${SERVER_NAME}.json"
 
 lookup_public_key() {
   WG_PUBLIC_KEY="$(jq -r --arg wg_ip_address "$1" '[.[] | select(.WGIPAddress == $wg_ip_address)][0] | .WGPublicKey' "$WIREGUARD_KEYS_FILE")"

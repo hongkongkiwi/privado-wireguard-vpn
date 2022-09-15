@@ -1,2 +1,4 @@
 creds.env
 data/**
+*.conf
+*.json

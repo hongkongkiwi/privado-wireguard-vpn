@@ -1,0 +1,4 @@
+#!/bin/sh -ue
+SERVERS_JSON="${SERVERS_JSON:-"data/servers.json"}"
+[ -f "$SERVERS_JSON" ] || { echo >&2 "ERROR: cannot find servers file, run get_servers first"; exit 100; }
+cat "$SERVERS_JSON" | jq -r '.servers[] | select(.maintenance == false) | .country+" ("+.city+"): "+.name'

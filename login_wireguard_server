@@ -1,10 +1,13 @@
 #!/bin/bash -ue
 CREDS_FILE="${CREDS_FILE:-"creds.env"}"
-source "$CREDS_FILE" ||{ echo >&2 "ERROR: invalid creds $CREDS_FILE file!"; exit 255; }
+[ -f "$CREDS_FILE" ] && source "$CREDS_FILE"
+[ -n "$PRIVADO_USERNAME" ] || { echo >&2 "ERROR: PRIVADO_USERNAME not set or missing creds file; exit 255; }
+[ -n "$PRIVADO_PASSWORD" ] || { echo >&2 "ERROR: PRIVADO_PASSWORD not set or missing creds file; exit 255; }
 CLIENT_API_URL="${CLIENT_API_URL:-"https://client-api.privado.io/v1"}"
 USER_AGENT="${USER_AGENT:-"App: 3.0.0 (576942783), macOS: Version 12.4 (Build 21F79)"}"
-LOGIN_TOKEN_FILE="${LOGIN_TOKEN:-"data/token.json"}"
-SERVERS_JSON="${SERVERS_JSON:-"data/servers.json"}"
+PRIVADO_DATA_DIR="${PRIVADO_DATA_DIR:-"data"}"
+LOGIN_TOKEN_FILE="${LOGIN_TOKEN:-"$PRIVADO_DATA_DIR/token.json"}"
+SERVERS_JSON="${SERVERS_JSON:-"$PRIVADO_DATA_DIR/servers.json"}"
 
 SERVER_NAME="${1-}"
 SERVER_API_PORT="44121"
@@ -18,15 +21,15 @@ fi
 RESULT="$(curl "https://${SERVER_NAME}:${SERVER_API_PORT}/api/1.0/login" \
 --compressed --silent \
 -X POST \
--H "$USER_AGENT" \
+-H "User-Agent: $USER_AGENT" \
 -H 'Content-Type: application/json' \
 -H 'Accept-Encoding: gzip, deflate, br' \
 -d '{
-  "Username" : "'$USERNAME'",
-  "Password" : "'$PASSWORD'"
+  "Username" : "'$PRIVADO_USERNAME'",
+  "Password" : "'$PRIVADO_PASSWORD'"
 }')"
 
-WIREGUARD_KEYS_FILE="data/wg_${SERVER_NAME}.conf"
+WIREGUARD_KEYS_FILE="PRIVADO_DATA_DIR/wg_${SERVER_NAME}.json"
 mkdir -p "$(dirname "$WIREGUARD_KEYS_FILE")"
 
 WG_IP_ADDRESS="$(echo "$RESULT" | jq -r '.WGIPAddress')"
@@ -38,3 +41,4 @@ fi
 RESULT="$(echo "$RESULT" | jq 'del(.Status)')"
 NEW_SERVER_CONTENT="$(jq -e --argjson result "$RESULT" '. += [$result]' "$WIREGUARD_KEYS_FILE")"
 echo "$NEW_SERVER_CONTENT" > "$WIREGUARD_KEYS_FILE"
+echo "Successfully got wireguard interface ip $WG_IP_ADDRESS"

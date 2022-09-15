@@ -1,0 +1,38 @@
+#!/bin/sh -ue
+DATA_DIR="data"
+
+generate_config() {
+  SERVER_NAME="${1-}"
+  JSON_FILE="$DATA_DIR/wg_$SERVER_NAME.json"
+  [ -f "$JSON_FILE" ] || { echo >&2 "ERROR: missing json file"; return 255; }
+  WG_INTERFACE_IP="${2-}"
+  [ -n "$WG_INTERFACE_IP" ] || { echo >&2 "ERROR: missing wg interface ip"; return 255; }
+  OUTPUT_FILE="${3:-"$DATA_DIR/wg_${SERVER_NAME}_${WG_INTERFACE_IP}.conf"}"
+  CLIENT_LISTENPORT="${4-}"
+
+  DNS_SERVER1="198.18.0.1"
+  DNS_SERVER2="198.18.0.2"
+  KEEP_ALIVE="25"
+  ALLOWED_IPS="0.0.0.0/0"
+  CLIENT_LISTENPORT="${CLIENT_LISTENPORT:-"51820"}"
+  WIREGUARD_JSON="$(jq -e --arg wg_ip_address "$WG_INTERFACE_IP" '.[] | select(.WGIPAddress == $wg_ip_address)' "$JSON_FILE")" || { echo >&2 "ERROR: cannot find wg_ip_address $WG_INTERFACE_IP in $JSON_FILE"; return 100; }
+
+  eval $(jq -r '.[0] | to_entries|map("\(.key)=\(.value|tostring)")|.[]' "$JSON_FILE")
+  mkdir -p "$(dirname "$OUTPUT_FILE")"
+cat >"$OUTPUT_FILE" <<EOF
+[Interface]
+PrivateKey = $WGPrivateKey
+#ListenPort = $CLIENT_LISTENPORT
+Address = $WGIPAddress/32
+DNS = $DNS_SERVER1 $DNS_SERVER2
+
+[Peer]
+PublicKey = $ServerPublicKey
+AllowedIPs = $ALLOWED_IPS
+Endpoint = $ServerIPAddress:$ServerListeningPort
+StaleSessionTimeout = $StaleSessionTimeout
+PersistentKeepalive = $KEEP_ALIVE
+EOF
+}
+
+generate_config $@
