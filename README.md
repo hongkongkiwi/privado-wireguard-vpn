@@ -1,6 +1,14 @@
 Privado Wireguard VPN
 =======================
 
+---
+
+### **Note: This code is not necessary anymore.**
+
+Please note that this code is no longer needed. It is now possible to generate a WireGuard configuration directly from the Privado web interface. See [issue #2](https://github.com/hongkongkiwi/privado-wireguard-vpn/issues/2) for more details.
+
+---
+
 Privado offers Wireguard support, but only using their client, I wanted to use wireguard in a docker container for my own purposes.
 
 I've written some scripts to pull down the credentials so that you can get the wireguard configs for your own client.
